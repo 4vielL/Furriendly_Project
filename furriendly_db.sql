@@ -121,3 +121,76 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+-- Events table
+CREATE TABLE `events` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `host_username` varchar(50) NOT NULL,
+  `event_title` varchar(255) NOT NULL,
+  `event_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `location` varchar(255) NOT NULL,
+  `services` text NOT NULL,
+  `description` text NOT NULL,
+  `full_name` varchar(100) NOT NULL,
+  `contact_number` varchar(20) NOT NULL,
+  `position` enum('Government Official','Veterinarian','Furr Parent') NOT NULL,
+  `id_upload` varchar(255) DEFAULT NULL,
+  `valid_id` varchar(255) NOT NULL,
+  `permit` varchar(255) NOT NULL,
+  `veterinarians_list` varchar(255) NOT NULL,
+  `safety_plan` varchar(255) NOT NULL,
+  `status` enum('pending','approved','rejected','completed') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_host_username` (`host_username`),
+  KEY `idx_event_date` (`event_date`),
+  KEY `idx_status` (`status`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_host_status` (`host_username`, `status`),
+  KEY `idx_date_status` (`event_date`, `status`),
+  CONSTRAINT `fk_events_host_username` 
+    FOREIGN KEY (`host_username`) 
+    REFERENCES `users` (`username`) 
+    ON DELETE CASCADE 
+    ON UPDATE CASCADE,
+  CONSTRAINT `chk_event_date_future` 
+    CHECK (`event_date` >= CURDATE()),
+  CONSTRAINT `chk_end_time_after_start` 
+    CHECK (`end_time` > `start_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Event participants table
+CREATE TABLE `event_participants` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `event_id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `joined_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `status` enum('joined','completed','canceled') DEFAULT 'joined',
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_event_participant` (`event_id`, `username`),
+  KEY `idx_event_id` (`event_id`),
+  KEY `idx_username` (`username`),
+  KEY `idx_status` (`status`),
+  KEY `idx_joined_at` (`joined_at`),
+  KEY `idx_event_status` (`event_id`, `status`),
+  KEY `idx_user_status` (`username`, `status`),
+  CONSTRAINT `fk_event_participants_event_id` 
+    FOREIGN KEY (`event_id`) 
+    REFERENCES `events` (`id`) 
+    ON DELETE CASCADE 
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_event_participants_username` 
+    FOREIGN KEY (`username`) 
+    REFERENCES `users` (`username`) 
+    ON DELETE CASCADE 
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Indexes for better performance on common queries
+ALTER TABLE `events` ADD FULLTEXT KEY `idx_search_event_title` (`event_title`);
+ALTER TABLE `events` ADD FULLTEXT KEY `idx_search_description` (`description`);
+ALTER TABLE `events` ADD FULLTEXT KEY `idx_search_location` (`location`);
